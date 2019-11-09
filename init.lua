@@ -1,30 +1,35 @@
---[[
+-- Jakub Trzebiatowski 2019
+
+wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it doesn't work - maybe it's something with stationap mode
+
+name, password, channel = wifi.sta.getconfig()
 
 
-function startSta()
-  print("startedSta");
-  t:unregister()
-
-
-  wifi.setmode(wifi.STATION, false) -- don't store it in flash
-
+function postData()
+    http.post("http://api.thingspeak.com/update?api_key=8MVCZUBH994ATU6Q&field1=100", nil, function(code, data)
+        if (code < 0) then
+          print("HTTP request failed")
+        else
+          print(code, data)
+        end
+      end)    
 end
-
-mytimer:register(60000, tmr.ALARM_SINGLE, startSta)
-mytimer:start()
-]]--
-
 
 function configureAp()
     enduser_setup.manual(true)
     enduser_setup.start(
             function()
                 print("Connected to WiFi as:" .. wifi.sta.getip());
-                if wifi.sta.config(wifi.sta.getconfig(true)) then
-                    -- store config in flash
-                    print("Succesfully configured sta (to flash)");
+                configuredName, configuredPassword = wifi.sta.getconfig();
+                if name == configuredName and password == configuredPassword then
+                    print("Not storing configuration into flash - configuration already stored");
                 else
-                    print("Error configuring sta");
+                    if wifi.sta.config(wifi.sta.getconfig(true)) then
+                        -- store config in flash
+                        print("Succesfully configured sta (to flash)");
+                    else
+                        print("Error configuring sta");
+                    end
                 end
 
             end,
@@ -34,15 +39,12 @@ function configureAp()
     )
 end
 
-wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it doesn't work - maybe it's something with stationap mode
 
-
-name, password, channel = wifi.sta.getconfig()
-print("starting, name: " .. name .. ", password: " .. password .. ", channel: " .. channel)
+print("Starting, name: " .. name .. ", password: " .. password .. ", channel: " .. channel)
 if channel == nil or channel == 0 then
     channel = 6
 end
-print("channel: " .. channel)
+print("Starting ap on channel: " .. channel)
 
 wifi.setmode(wifi.STATIONAP, false) -- don't store it in flash
 
@@ -63,6 +65,7 @@ function tryToConnect()
         wifi.sta.connect()
     else
         print("connected already, ip:" .. ip .. " gw:" .. gw .. " nm:" .. nm);
+        postData();
     end
 end
 
