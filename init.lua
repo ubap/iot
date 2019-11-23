@@ -2,9 +2,6 @@
 
 wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it doesn't work - maybe it's something with stationap mode
 
-name, password, channel = wifi.sta.getconfig()
-
-
 function postData()
     http.post("http://api.thingspeak.com/update?api_key=8MVCZUBH994ATU6Q&field1=100", nil, function(code, data)
         if (code < 0) then
@@ -39,7 +36,25 @@ function configureAp()
     )
 end
 
+function tryToConnectToPreconfiguredAp()
+    if not file.exists("eus_params.lua") then
+        print("Config file doesn't exist")
+        return
+    end
+    print("Loading config from file")
+    p = dofile('eus_params.lua')
+    
+    station_cfg={}
+    station_cfg.ssid=p.wifi_ssid
+    station_cfg.pwd=p.wifi_password
+    station_cfg.save=false
+    print("ssid: \"" .. station_cfg.ssid .. "\", password: \"" .. station_cfg.pwd .. "\"")
+    wifi.sta.config(station_cfg)
 
+end
+
+tryToConnectToPreconfiguredAp()
+name, password, channel = wifi.sta.getconfig()
 print("Starting, name: " .. name .. ", password: " .. password .. ", channel: " .. channel)
 if channel == nil or channel == 0 then
     channel = 6
