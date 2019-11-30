@@ -6,7 +6,7 @@ wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it does
 ds18b20 = require("ds18b20")
 
 function postData(temp)
-    local url = "http://api.thingspeak.com/update?api_key" .. API_KEY .. "&field1=" .. temp
+    local url = "http://api.thingspeak.com/update?api_key=" .. API_KEY .. "&field1=" .. temp
     print("GET " .. url)
     http.get(url, nil, function(code, data)
         if (code < 0) then
