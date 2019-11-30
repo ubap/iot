@@ -1,11 +1,16 @@
 -- Jakub Trzebiatowski 2019
 
-wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it doesn't work - maybe it's something with stationap mode
+API_KEY = "IHNKTJICVHTT5RJ8"
 
-function postData()
-    http.post("http://api.thingspeak.com/update?api_key=8MVCZUBH994ATU6Q&field1=100", nil, function(code, data)
+wifi.sta.autoconnect(0) -- disable auto connect beacause for some reason it doesn't work - maybe it's something with stationap mode
+ds18b20 = require("ds18b20")
+
+function postData(temp)
+    local url = "http://api.thingspeak.com/update?api_key" .. API_KEY .. "&field1=" .. temp
+    print("GET " .. url)
+    http.get(url, nil, function(code, data)
         if (code < 0) then
-          print("HTTP request failed")
+          print("HTTP request failed, code: " .. code)
         else
           print(code, data)
         end
@@ -53,6 +58,25 @@ function tryToConnectToPreconfiguredAp()
 
 end
 
+function readTempAndPostData()
+    local pin = 3 -- gpio0 = 3, gpio2 = 4
+
+    local function readout(temp)
+        if ds18b20.sens then
+            print("Total number of DS18B20 sensors: ".. #ds18b20.sens)
+            for i, s in ipairs(ds18b20.sens) do
+                print(string.format("  sensor #%d address: %s%s",  i, ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format(s:byte(1,8)), s:byte(9) == 1 and " (parasite)" or ""))
+            end
+        end
+        for addr, temp in pairs(temp) do
+            print(string.format("Sensor %s: %s °C", ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format(addr:byte(1,8)), temp))
+            postData(temp)
+        end
+    end
+
+    ds18b20:read_temp(readout, pin, ds18b20.C)
+end
+
 tryToConnectToPreconfiguredAp()
 name, password, channel = wifi.sta.getconfig()
 print("Starting, name: " .. name .. ", password: " .. password .. ", channel: " .. channel)
@@ -71,16 +95,20 @@ end
 
 configureAp()
 
+
+
+-- watchdog below
 function tryToConnect()
     name, password, channel = wifi.sta.getconfig()
     print("periodic wifi check, name: " .. name .. ", password: " .. password .. ", channel: " .. channel)
     ip, nm, gw = wifi.sta.getip()
     if ip == nil then
         print("tryingToConnect");
+        tryToConnectToPreconfiguredAp()
         wifi.sta.connect()
     else
         print("connected already, ip:" .. ip .. " gw:" .. gw .. " nm:" .. nm);
-        postData();
+        readTempAndPostData()
     end
 end
 
