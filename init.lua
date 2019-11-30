@@ -114,5 +114,5 @@ end
 
 local mytimer = tmr.create()
 
-mytimer:register(10000, tmr.ALARM_AUTO, tryToConnect)
+mytimer:register(20000, tmr.ALARM_AUTO, tryToConnect)
 mytimer:start()
